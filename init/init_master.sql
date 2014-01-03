@@ -18,4 +18,5 @@ CREATE TABLE DAT_Master(
        PRIMARY KEY(master_row_id) 
 );
 
+SELECT AddGeometryColumn('', 'dat_master', 'geom', 4326, 'POINT', 2);
 

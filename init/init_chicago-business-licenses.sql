@@ -7,7 +7,7 @@
 DROP TABLE IF EXISTS SRC_chicago_business_licenses;
 
 CREATE TABLE IF NOT EXISTS SRC_chicago_business_licenses(
-ID VARCHAR(20),
+ID VARCHAR(16),
 LICENSE_ID INTEGER,
 ACCOUNT_NUMBER INTEGER,
 SITE_NUMBER INTEGER,
@@ -35,10 +35,12 @@ LONGITUDE FLOAT8,
 LOCATION POINT,
 PRIMARY KEY(LICENSE_ID));
 
+
 COPY SRC_chicago_business_licenses
-FROM '/project/evtimov/wopr/data/chicago-business-licenses_2013-10-29.csv'
+FROM '/tmp/chicago-business-licenses_2014-01-03.csv'
 WITH DELIMITER ','
 CSV HEADER;
+
 
 
 --
@@ -111,7 +113,7 @@ LATITUDE,
 LONGITUDE,
 LOCATION)
 SELECT
-'2013-10-29' AS start_date,
+'2014-01-03' AS start_date,
 ID,
 LICENSE_ID,
 ACCOUNT_NUMBER,
@@ -155,7 +157,9 @@ INSERT INTO DAT_Master(
   obs_date,
   obs_ts,
   dataset_name,
-  dataset_row_id)
+  dataset_row_id,
+  geom
+)
 SELECT
   start_date,
   end_date,
@@ -166,6 +170,7 @@ SELECT
   LICENSE_TERM_START_DATE AS obs_date,
   NULL AS obs_ts,
   'chicago_business_licenses' AS dataset_name,
-  chicago_business_licenses_row_id AS dataset_row_id
+  chicago_business_licenses_row_id AS dataset_row_id,
+  ST_SetSRID(ST_MakePoint(LONGITUDE, LATITUDE), 4326)
 FROM
   DAT_chicago_business_licenses;
