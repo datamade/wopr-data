@@ -15,7 +15,8 @@ CREATE TABLE DAT_Master(
        geoTag3 VARCHAR(50),
        dataset_name VARCHAR(50),
        dataset_row_id INT,
-       PRIMARY KEY(master_row_id) 
+       PRIMARY KEY(master_row_id),
+       FOREIGN KEY (dataset_name) REFERENCES DAT_Meta(dataset_name)
 );
 
 
