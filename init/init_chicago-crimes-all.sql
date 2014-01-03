@@ -56,7 +56,7 @@ Latitude,
 Longitude,
 Location
 )
-FROM '/tmp/chicago-crimes-all_2013-10-29.csv'
+FROM '/tmp/chicago-crime-all_2014-01-03.csv'
 WITH DELIMITER ','
 CSV HEADER;
 
@@ -194,7 +194,7 @@ Latitude,
 Longitude,
 Location)
 SELECT
-'2013-10-29' AS start_date,
+'2014-01-03' AS start_date,
 ID,
 Case_Number,
 Orig_Date,
