@@ -1,8 +1,12 @@
 # https://data.cityofchicago.org/api/views/ijzp-q8t2/rows.csv?accessType=DOWNLOAD
 import psycopg2
 import requests
+import os
 from cStringIO import StringIO
 from datetime import datetime
+from sqlalchemy import Table, create_engine, Column, Integer
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
 CHICAGO_ENDPOINT = 'https://data.cityofchicago.org/api/views'
 VIEWS = {
@@ -32,8 +36,24 @@ def load_and_save(dataset_name, dataset_id):
         raise
     return ''
 
-def make_it_so():
+def update(dataset_name):
+    engine = create_engine(DB_CONN)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    Base = declarative_base()
+    new_records = Table('new_%s' % dataset_name, Base.metadata,
+        Column('LICENSE_ID', Integer, primary_key=True))
+    if new_records.exists(engine):
+        new_records.drop(engine)
+    new_records.create(engine)
+    sel = select([src_table.c.license_id])\
+        .select_from(
+            src_table.outerjoin(
+              dat_table, src_table.c.license_id == dat_table.c.license_id)
+            )\
+        .where(dat_table.c.chicago_business_licenses_row_id != None)
     return None
 
 if __name__ == '__main__':
-    load_and_save()
+    # load_and_save()
+    update('chicago_business_licenses')
