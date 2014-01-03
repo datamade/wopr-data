@@ -56,7 +56,7 @@ Latitude,
 Longitude,
 Location
 )
-FROM '/project/evtimov/wopr/data/chicago-crimes-all_2013-10-29.csv'
+FROM '/tmp/chicago-crimes-all_2013-10-29.csv'
 WITH DELIMITER ','
 CSV HEADER;
 
@@ -233,7 +233,9 @@ INSERT INTO DAT_Master(
   obs_date,
   obs_ts,
   dataset_name,
-  dataset_row_id)
+  dataset_row_id,
+  geom
+)
 SELECT
   start_date,
   end_date,
@@ -244,6 +246,7 @@ SELECT
   Orig_Date AS obs_date,
   NULL AS obs_ts,
   'chicago_crimes_all' AS dataset_name,
-  chicago_crimes_all_row_id AS dataset_row_id
+  chicago_crimes_all_row_id AS dataset_row_id,
+  ST_SetSRID(ST_MakePoint(Longitude, Latitude), 4326)
 FROM
   DAT_chicago_crimes_all;
