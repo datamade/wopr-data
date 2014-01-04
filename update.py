@@ -7,6 +7,7 @@ from datetime import datetime
 from sqlalchemy import Table, create_engine, Column, Integer
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql import select
 
 CHICAGO_ENDPOINT = 'https://data.cityofchicago.org/api/views'
 VIEWS = {
@@ -46,12 +47,17 @@ def update(dataset_name):
     if new_records.exists(engine):
         new_records.drop(engine)
     new_records.create(engine)
+    dat_table = Table('dat_%s' % dataset_name, Base.metadata,
+        autoload=True, autoload_with=engine)
+    src_table = Table('src_%s' % dataset_name, Base.metadata,
+        autoload=True, autoload_with=engine)
     sel = select([src_table.c.license_id])\
         .select_from(
             src_table.outerjoin(
               dat_table, src_table.c.license_id == dat_table.c.license_id)
             )\
         .where(dat_table.c.chicago_business_licenses_row_id != None)
+    print new_records.insert().from_select(['LICENSE_ID'], sel)
     return None
 
 if __name__ == '__main__':
