@@ -56,7 +56,7 @@ Latitude,
 Longitude,
 Location
 )
-FROM '/tmp/chicago-crime-all_2014-01-03.csv'
+FROM '/tmp/chicago-crime-all_2014-01-07.csv'
 WITH DELIMITER ','
 CSV HEADER;
 
@@ -194,7 +194,7 @@ Latitude,
 Longitude,
 Location)
 SELECT
-'2014-01-03' AS start_date,
+'2014-01-07' AS start_date,
 ID,
 Case_Number,
 Orig_Date,
@@ -244,7 +244,7 @@ SELECT
   Latitude, 
   Longitude,
   Orig_Date AS obs_date,
-  NULL AS obs_ts,
+  Orig_Date AS obs_ts,
   'chicago_crimes_all' AS dataset_name,
   chicago_crimes_all_row_id AS dataset_row_id,
   ST_SetSRID(ST_MakePoint(Longitude, Latitude), 4326)
