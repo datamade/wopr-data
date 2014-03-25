@@ -6,7 +6,7 @@ SHELL := /bin/bash
 .SUFFIXES:
 VPATH=raw:build
 
-HOURLY_HEADER="wban_number,date,time,station_type,maintenance_indicator,\
+HOURLY_HEADER="wban_number,date_time,station_type,maintenance_indicator,\
 sky_conditions,visibility,weather_type,dry_bulb_temp,dew_point_temp,\
 wet_bulb_temp,relative_humidity,wind_speed_kt,wind_direction,\
 wind_char_gusts_kt,val_for_wind_char,station_pressure,pressure_tendency,\
@@ -30,6 +30,12 @@ csv: $(shell python processors/gen_dates.py hourly.csv)
 
 %hourly.csv: %.tar.gz
 	@tar -O -x -f raw/$(notdir $?) --include *hourly.txt | \
-	(echo $(HOURLY_HEADER) ; tail -n +2) | \
-	iconv -f ISO-8859-1 -t UTF-8 > build/$(basename $@).csv
+	tail -n +2 | \
+	iconv -f ISO-8859-1 -t UTF-8 | \
+	python processors/make_real_nulls.py | \
+	python processors/combine_columns.py 1,2 | \
+	python processors/format_date.py "-1" "%Y%m%d-%H%M" "%Y-%m-%d %H:%M:%S" | \
+	csvcut -c 1,22,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21 | \
+	(echo $(HOURLY_HEADER) ; tail -n +2 ) | \
+	python processors/strip_whitespace.py > build/$(basename $@).csv
 	@echo "$@ done"
