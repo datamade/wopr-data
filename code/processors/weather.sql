@@ -1,11 +1,11 @@
-CREATE TABLE "src_weather" (
+CREATE TABLE IF NOT EXISTS "src_weather" (
     wban_number VARCHAR(5) NOT NULL,
     date_time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     station_type VARCHAR(4),
     maintenance_indicator VARCHAR(5),
-    sky_conditions VARCHAR(34),
+    sky_conditions VARCHAR(44),
     visibility VARCHAR(7),
-    weather_type VARCHAR(15),
+    weather_type VARCHAR(25),
     dry_bulb_temp VARCHAR(5),
     dew_point_temp VARCHAR(5),
     wet_bulb_temp VARCHAR(5),

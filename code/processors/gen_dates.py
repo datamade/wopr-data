@@ -8,8 +8,7 @@ def add_month(sourcedate):
     day = min(sourcedate.day, calendar.monthrange(year,month)[1])
     return date(year,month,day)
 
-def datespan(start):
-    end = datetime.now()
+def datespan(start, end):
     current = start
     delta = timedelta(days=30)
     while (current.year, current.month) != (end.year, end.month):
@@ -23,7 +22,11 @@ if __name__ == "__main__":
         start = datetime.strptime(sys.argv[2], '%Y/%m')
     except IndexError:
         start = datetime(1996,7,1)
+    try:
+        end = datetime.strptime(sys.argv[3], '%Y/%m')
+    except IndexError:
+        end = datetime.now()
     outp = []
-    for d in datespan(start):
+    for d in datespan(start, end):
         outp.append('%s%s' % (d.strftime('%Y%m'),ext))
     sys.stdout.write(' '.join(outp))
