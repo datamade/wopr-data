@@ -53,10 +53,7 @@ sql: $(shell python processors/gen_dates.py .table)
  	iconv -f ISO-8859-1 -t UTF-8 | python processors/make_real_nulls.py | \
  	python processors/combine_columns.py 1,2 | \
  	python processors/format_date.py "-1" "%Y%m%d-%H%M" "%Y-%m-%d %H:%M:%S" | \
-	# idea here is to make sure all files are arranged the same
-	# Despite the vintage
- 	python processors/catch_format_diffs.py $? | \
- 	csvcut -c 1,22,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21 | \
+ 	python processors/catch_format_diffs.py | \
  	python processors/strip_whitespace.py > build/$(basename $@).csv \
  	echo "$@ done" \
 
