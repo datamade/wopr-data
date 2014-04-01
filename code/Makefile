@@ -21,11 +21,13 @@ clean:
 
 all: csv
 
-fetch: $(TAR_FILES) $(ZIP_FILES)
+fetch: $(ZIP_FILES)
 
-csv: $(shell python processors/gen_dates.py hourly.csv)
+csv: $(shell python processors/gen_dates.py hourly.csv "2007/05")
 
-sql: $(shell python processors/gen_dates.py .table)
+join: $(shell python processors/gen_dates.py hourly.joined.csv "2007/05")
+
+sql: $(shell python processors/gen_dates.py .table "2007/05")
 
 %.tar.gz:
 	@wget http://cdo.ncdc.noaa.gov/qclcd_ascii/$@ -O raw/$@
@@ -37,30 +39,47 @@ sql: $(shell python processors/gen_dates.py .table)
 	@unzip -q -j raw/$@ '*hourly.txt' -d build
 	@touch raw/$@
 
-%hourly.txt: $(TAR_FILES) $(ZIP_FILES)
+%hourly.txt:
 	@touch build/$@
 
-%hourly.cleaned.csv: %hourly.txt
+%hourly.il: %hourly.txt
+	for f in $?; do \
+		for wban in $(shell cat raw/station_ids.txt); do \
+			cat $$f | grep ^$$wban >> build/$@; \
+		done; \
+	done;
+
+%hourly.cleaned.csv: %hourly.il
 	@echo "Cleaning $@..."
 	@python processors/open_file.py build/$(notdir $?) | \
  	iconv -f ISO-8859-1 -t UTF-8 | \
  	tr -d '"' | \
  	python processors/strip_whitespace.py | \
+ 	python processors/nullify_fields.py M | \
+ 	python processors/validate_nulls.py 1,2,10 | \
  	python processors/make_real_nulls.py > build/$(basename $@).csv
 
 %hourly.csv: %hourly.cleaned.csv
 	@echo "Building $@..."
 	@python processors/open_file.py build/$(notdir $?) | \
 		python processors/combine_columns.py 1,2 | \
+		python processors/make_floats.py 8,10,12,14,16,18,20,28,34,40 | \
 		python processors/format_date.py "-1" "%Y%m%d-%H%M" "%Y-%m-%d %H:%M:%S" | \
 		python processors/catch_format_diffs.py > build/$(basename $@).csv
 	@echo "$@ done" \
 
-%.table: %hourly.csv
+%hourly.joined.csv: %hourly.csv
+	@csvjoin -c 1,2 build/$(notdir $?) raw/stations.csv | \
+		csvcut -c 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,51,52 | \
+		python processors/norm_lon_lat.py "-1,-2" > build/$@
+
+%.table: %hourly.joined.csv
 	@psql -h $(PG_HOST) -p $(PG_PORT) -U $(PG_USER) -d $(PG_DB) \
 		-f processors/weather.sql
 	@csvsql build/$(notdir $?) \
 		--db "postgresql://$(PG_USER):@$(PG_HOST):$(PG_PORT)/$(PG_DB)" \
 		--table src_weather --insert --no-create
+	@psql -h $(PG_HOST) -p $(PG_PORT) -U $(PG_USER) -d $(PG_DB) \
+		-f processors/add_geom.sql
 	@touch build/$(notdir $?).table
 

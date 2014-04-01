@@ -69,7 +69,7 @@ import csv
 import sys
 from csvkit.cli import parse_column_identifiers
 
-HEADER = ['wban','date_time','station_type','skycondition','skyconditionflag','visibility',
+HEADER = ['wban','station_type','skycondition','skyconditionflag','visibility',
     'visibilityflag','weathertype','weathertypeflag','drybulbfarenheit','drybulbfarenheitflag',
     'drybulbcelsius','drybulbcelsiusflag','wetbulbfarenheit','wetbulbfarenheitflag',
     'wetbulbcelsius','wetbulbcelsiusflag','dewpointfarenheit','dewpointfarenheitflag',
@@ -78,13 +78,13 @@ HEADER = ['wban','date_time','station_type','skycondition','skyconditionflag','v
     'valueforwindcharacterflag','stationpressure','stationpressureflag','pressuretendency',
     'pressuretendencyflag','pressurechange','pressurechangeflag','sealevelpressure',
     'sealevelpressureflag','recordtype','recordtypeflag','hourlyprecip','hourlyprecipflag',
-    'altimeter','altimeterflag'
+    'altimeter','altimeterflag','date_time',
 ]
 
 def process_old_file(reader):
     rows = [HEADER]
-    cols = [0,21,3,5,42,6,42,7,42,8,42,42,42,10,42,42,42,9,42,42,42,11,42,12,42,13,42,15,
-            42,16,42,17,42,42,42,18,42,19,42,20,42,42,42]
+    cols = [0,3,5,42,6,42,7,42,8,42,42,42,10,42,42,42,9,42,42,42,11,42,12,42,13,42,15,
+            42,16,42,17,42,42,42,18,42,19,42,20,42,42,21]
     raw_rows = []
     for row in reader:
         for i in range(len(HEADER) - len(row)):
@@ -96,10 +96,13 @@ def process_old_file(reader):
 
 def process_new_file(reader):
     rows = [HEADER]
-    cols = [0,44,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,
-            29,30,31,32,33,34,35,36,37,38,39,30,41,42,43]
+    cols = [0,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,
+            30,31,32,33,34,35,36,37,38,39,40,41,42,43,44]
     for row in reader:
-        rows.append([row[c] for c in cols])
+        val = []
+        for col in cols:
+            val.append(row[col])
+        rows.append(val)
     return rows
 
 if __name__ == "__main__":
