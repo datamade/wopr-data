@@ -1,4 +1,4 @@
-CREATE TABLE src_weather (
+CREATE TABLE IF NOT EXISTS src_weather (
     wban VARCHAR(5) NOT NULL,
     date_time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     station_type INTEGER,

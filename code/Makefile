@@ -5,7 +5,7 @@ SHELL := /bin/bash
 .DELETE_ON_ERROR:
 .SUFFIXES:
 VPATH=raw:build
-PG_HOST=localhost
+PG_HOST=33.33.33.8
 PG_USER=postgres
 PG_DB=wopr
 PG_PORT=5432
@@ -27,6 +27,8 @@ csv: $(shell python processors/gen_dates.py hourly.csv "2007/05")
 
 join: $(shell python processors/gen_dates.py hourly.joined.csv "2007/05")
 
+il: $(shell python processors/gen_dates.py hourly.il "2007/05")
+
 sql: $(shell python processors/gen_dates.py .table "2007/05")
 
 %.tar.gz:
@@ -38,9 +40,6 @@ sql: $(shell python processors/gen_dates.py .table "2007/05")
 	@wget http://cdo.ncdc.noaa.gov/qclcd_ascii/QCLCD$@ -O raw/$@
 	@unzip -q -j raw/$@ '*hourly.txt' -d build
 	@touch raw/$@
-
-%hourly.txt:
-	@touch build/$@
 
 %hourly.il: %hourly.txt
 	for f in $?; do \
@@ -73,7 +72,7 @@ sql: $(shell python processors/gen_dates.py .table "2007/05")
 		csvcut -c 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,51,52 | \
 		python processors/norm_lon_lat.py "-1,-2" > build/$@
 
-%.table: %hourly.joined.csv
+%hourly.table: %hourly.joined.csv
 	@psql -h $(PG_HOST) -p $(PG_PORT) -U $(PG_USER) -d $(PG_DB) \
 		-f processors/weather.sql
 	@csvsql build/$(notdir $?) \
