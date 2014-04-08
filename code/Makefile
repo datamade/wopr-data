@@ -1,14 +1,4 @@
-MAKEFLAGS += --warn-undefined-variables
-SHELL := /bin/bash
-.SHELLFLAGS := -eu -o pipefail
-.DEFAULT_GOAL := all
-.DELETE_ON_ERROR:
-.SUFFIXES:
-VPATH=raw:build
-PG_HOST=33.33.33.8
-PG_USER=postgres
-PG_DB=wopr
-PG_PORT=5432
+include config.mk
 
 .PHONY: all clean
 
@@ -29,7 +19,7 @@ join: $(shell python processors/gen_dates.py hourly.joined.csv "2007/05")
 
 il: $(shell python processors/gen_dates.py hourly.il "2007/05")
 
-sql: $(shell python processors/gen_dates.py .table "2007/05")
+sql: $(shell python processors/gen_dates.py hourly.table "2007/05")
 
 %.tar.gz:
 	@wget http://cdo.ncdc.noaa.gov/qclcd_ascii/$@ -O raw/$@
@@ -40,6 +30,9 @@ sql: $(shell python processors/gen_dates.py .table "2007/05")
 	@wget http://cdo.ncdc.noaa.gov/qclcd_ascii/QCLCD$@ -O raw/$@
 	@unzip -q -j raw/$@ '*hourly.txt' -d build
 	@touch raw/$@
+
+%hourly.txt:
+	touch $@
 
 %hourly.il: %hourly.txt
 	for f in $?; do \
@@ -72,13 +65,55 @@ sql: $(shell python processors/gen_dates.py .table "2007/05")
 		csvcut -c 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,51,52 | \
 		python processors/norm_lon_lat.py "-1,-2" > build/$@
 
-%hourly.table: %hourly.joined.csv
-	@psql -h $(PG_HOST) -p $(PG_PORT) -U $(PG_USER) -d $(PG_DB) \
+src_weather.table: %hourly.joined.csv
+	@psql -U $(PG_USER) -d $(PG_DB) \
 		-f processors/weather.sql
 	@csvsql build/$(notdir $?) \
-		--db "postgresql://$(PG_USER):@$(PG_HOST):$(PG_PORT)/$(PG_DB)" \
+		--db "postgresql://$(PG_USER):@/$(PG_DB)" \
 		--table src_weather --insert --no-create
-	@psql -h $(PG_HOST) -p $(PG_PORT) -U $(PG_USER) -d $(PG_DB) \
+	@psql -U $(PG_USER) -d $(PG_DB) \
 		-f processors/add_geom.sql
-	@touch build/$(notdir $?).table
+	@touch build/src_weather.table
+
+dup_weather.table: src_weather.table
+	psql -U $(PG_USER) -d $(PG_DB) -c \
+		"CREATE TABLE dup_weather AS \
+		SELECT date_time, wban, MAX(id) from src_weather \
+		GROUP BY date_time, wban;"
+	touch build/dup_weather.table
+
+dat_weather.table: dup_weather.table
+	psql -U $(PG_USER) -d $(PG_DB) -c \
+		"CREATE TABLE dat_weather AS \
+		SELECT src_weather.* from src_weather \
+		JOIN dup_weather \
+		ON src_weather.id = dup_weather.max;"
+	psql -U $(PG_USER) -d $(PG_DB) -c \
+		"ALTER TABLE dat_weather ADD PRIMARY KEY (id);"
+	psql -U $(PG_USER) -d $(PG_DB) -c \
+		"GRANT ALL ON dat_weather to wopr_dev;"
+	touch build/dat_weather.table
+
+dat_master.table: dat_weather.table
+	psql -U $(PG_USER) -d $(PG_DB) -c \
+		"INSERT INTO dat_master(\
+		latitude,\
+		longitude,\
+		obs_date,\
+		obs_ts,\
+		dataset_name,\
+		dataset_row_id,\
+		location_geom)\
+		SELECT \
+		lat as latitude,\
+		lon as longitude,\
+		date_trunc('day', date_time) as obs_date,\
+		date_time as obs_ts,\
+		'weather' as dataset_name,\
+		id as dataset_row_id,\
+		geom as location_geom\
+		FROM dat_weather;"
+	touch build/dat_master.table
+
+
 
